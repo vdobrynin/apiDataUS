@@ -5,6 +5,7 @@ import io.restassured.response.Response;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.not;
 
@@ -37,6 +38,51 @@ public final class DataUsaApi {
      * { "page": {...}, "columns": [...],
      *   "data": [ {"State ID": "...", "State": "Alabama", "Year": 2023, "Population": 5054253}, ... ] }
      */
+    /** GETs the list of all data cubes registered on the server (smoke check). */
+    public static Response getCubes() {
+        return RestAssured.given()
+                    .baseUri(BASE_URI)
+                .when()
+                    .get("/tesseract/cubes")
+                .then()
+                    .statusCode(200)
+                    .contentType(containsString("application/json"))
+                    .body("cubes", not(empty()))
+                .extract()
+                    .response();
+    }
+
+    /** GETs the full schema (dimensions & measures) of a single cube. */
+    public static Response getCubeSchema(String cubeName) {
+        return RestAssured.given()
+                    .baseUri(BASE_URI)
+                .when()
+                    .get("/tesseract/cubes/{cubeName}", cubeName)
+                .then()
+                    .statusCode(200)
+                    .contentType(containsString("application/json"))
+                    .body("name", equalTo(cubeName))
+                    .body("measures", not(empty()))
+                .extract()
+                    .response();
+    }
+
+    /** GETs the distinct Year values available in the population cube. */
+    public static Response getAvailableYears() {
+        return RestAssured.given()
+                    .baseUri(BASE_URI)
+                    .queryParam("cube", POPULATION_CUBE)
+                    .queryParam("level", "Year")
+                .when()
+                    .get("/tesseract/members")
+                .then()
+                    .statusCode(200)
+                    .contentType(containsString("application/json"))
+                    .body("members", not(empty()))
+                .extract()
+                    .response();
+    }
+
     public static Response getPopulationByState(int year) {
         return RestAssured.given()
                     .baseUri(BASE_URI)
